@@ -24,7 +24,7 @@ struct rule {
   unsigned char	op_num;		// Action number (weapon)
 };
 
-#define DEBUG	1
+#define DEBUG	0
 
 // Do not ban computerd from LAN, we debug with them
 #define LAN_PREFIX "192.168."

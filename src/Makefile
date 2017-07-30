@@ -1,8 +1,8 @@
 CC	?=	cc
 LD	= 	$(CC)
 
-#CFLAGS	=	-Wall -Os -pipe
-CFLAGS	=	-Wall -g -pipe
+CFLAGS	=	-Wall -Os -pipe
+#CFLAGS	=	-Wall -g -pipe
 OBJ	=	banmoron.o
 
 PROJECT	= 	banmoron.cgi
@@ -22,5 +22,4 @@ clean:
 	rm -f $(OBJ) $(PROJECT)
 
 install:
-	install -s -m 755 $(PROJECT) $(CGIPATH)
-	chmod u+s	$(CGIPATH)$(PROJECT)	
+	install -s -m 4755 $(PROJECT) $(CGIPATH)
