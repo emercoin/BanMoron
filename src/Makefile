@@ -1,7 +1,8 @@
 CC	?=	cc
 LD	= 	$(CC)
 
-CFLAGS	+=	-Wall -Os
+#CFLAGS	=	-Wall -Os -pipe
+CFLAGS	=	-Wall -g -pipe
 OBJ	=	banmoron.o
 
 PROJECT	= 	banmoron.cgi

@@ -4,20 +4,43 @@
 #include <unistd.h>
 
 /*------------------------------------------------------------------------------*/
+// 404 CGI program for perform strike-back action.
+// Currently available:
+//  - ban by IP (FreeBSD pf)
+//  - send back zip-bomb
+//  - just print the page "404 not found"
+//
+// Activate with apache 404 handler config line:
+// ErrorDocument 404 "/cgi-bin/banmoron.cgi"
+//
+// Author: Oleg Khovayko (olegarch)
+// License: BSD
 
 typedef void (*action_t)(void);
 
 struct rule {
-  char		str[11];	// Substring in REQUEST_URI
+  char		str[14];	// Substring in REQUEST_URI
+  unsigned char	len;		// Action number (weapon)
   unsigned char	op_num;		// Action number (weapon)
 };
 
+#define DEBUG	1
+
+// Do not ban computerd from LAN, we debug with them
 #define LAN_PREFIX "192.168."
 
-const struct rule rules[] = {
- {".php",	1},	// Ban PHP-reader
- {"wallet",	2},	// Send zip-bomb to wallet lovers
- {"",		0}	// End of table
+// Hashtable mask
+#define HMASK ((1 << 9) - 1)
+
+#define BANRULE(str, op) {str, sizeof(str) - 1, op},
+// Substring length: min=3, max=13
+struct rule rules[] = {
+  //-------xxxXXXXXXXXXX---
+  BANRULE("setup.php",	1)	// Ban PHP My Admin scanner
+  BANRULE("xmlrpc.php",	1)	// Ban WordPress XMLRPC bruteforecer
+  BANRULE("command.php",1)	// Ban - I don't know what, but found in httpd-access
+  BANRULE("wallet",	2)	// Send zip-bomb to wallet lovers
+ {"", 0, 0}			// End of table
 };
 
 /*------------------------------------------------------------------------------*/
@@ -50,7 +73,7 @@ void ban_moron(char **parmList) {
     printf("%sBlocked IP: %s\n</body></html>\n", htmlHead, g_ip);
     fclose(stdout);
 
-    // Allow only [:.0-9A-Za-z] in the IP to preserve possible REMOTE_ADDR hack
+    // Allow only [:.0-9A-Fa-f] in the IP to preserve possible REMOTE_ADDR hack
     for(char c, *p = g_ip; (c = *p) != 0; p++) {
       if(!(
 	    (c >= '0' && c <= '9') ||
@@ -75,6 +98,9 @@ void ban_moron_pf(void) {
 
 /*------------------------------------------------------------------------------*/
 // Send infinity zip-bomb to hacker
+// bomb contains chain of HTML tags
+//   <table><tr><td>
+// for overflow HTML parser on hacker's side
 void zip_bomb(void) {
   const char bomb_header[] = {
     0x1f,0x8b,0x08,0x08,0x30,0x8d,0x72,0x59,0x02,0x03,0x62,0x6f,0x6d,0x62,0x2e,0x74,
@@ -93,7 +119,9 @@ void zip_bomb(void) {
       "Content-Encoding: gzip\n"
       );
 
-  fwrite(bomb_header, 16, 6, stdout); // Send infinity zip, untill connection broken
+  fwrite(bomb_header, 16, 6, stdout); 
+
+  // Send infinity zip, until iclient close connection
   while(fwrite(bomb_body, 1024, 1, stdout) != 1);
 
 } // block_moron_pf
@@ -116,11 +144,45 @@ int main(int argc, char **argv) {
   g_uri = getenv("REQUEST_URI");
   g_ip  = getenv("REMOTE_ADDR");
 
+  // get some random for universal hashing
+  char rnd = (char)getpid();
+
+#if DEBUG
+  if(g_uri == NULL) {
+    // started from command line - check rules action, no real action calls
+    g_uri = argv[1];
+    g_ip  = (char*)0x1;
+  }
+#endif
+
   if(g_ip && g_uri) {
+    static char htable[HMASK + 1]; // Hashtable for Rabin search algorithm
+    int act_no = 0; // Default: print err404
+
     const struct rule *r = rules;
-    while(r->str[0] != 0 && strstr(g_uri, r->str) == NULL)
-      r++;
-    arsenal[r->op_num](); // Use weapon from arsenal
+    while(r->len != 0)
+      htable[(((r->str[0] ^ rnd) << 6) + ((r->str[1] ^ rnd) << 3) + (r->str[2] ^ rnd)) & HMASK] = 1, r++;
+
+    // Search for substrings using Rabin algoruthm with 3-chars sliding window
+    int hash = 0;
+    for(const char *p = g_uri; *p; p++)
+      if(htable[hash = ((hash << 3) + (*p ^ rnd)) & HMASK] && p - g_uri >= 2)
+	for(r = rules; r->len != 0; r++) 
+          if(strncmp(p - 2, r->str, r->len) == 0) {
+	    act_no = r->op_num;
+	    goto action;
+	  }
+
+    action:
+
+#if DEBUG
+    if(g_ip == (char*)0x1) {
+      printf("Debug action=%d\n", act_no);
+      return act_no;
+    }
+    else
+#endif
+      arsenal[act_no](); // Use weapon from the arsenal
   }
 
   return 0;
