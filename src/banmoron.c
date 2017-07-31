@@ -20,7 +20,7 @@ typedef void (*action_t)(void);
 
 struct rule {
   char		str[14];	// Substring in REQUEST_URI
-  unsigned char	len;		// Action number (weapon)
+  unsigned char	len;		// Actual substring lenght
   unsigned char	op_num;		// Action number (weapon)
 };
 
@@ -40,8 +40,9 @@ struct rule rules[] = {
   BANRULE("xmlrpc.php",	1)	// Ban WordPress XMLRPC bruteforecer
   BANRULE("command.php",1)	// Ban - I don't know what, but found in httpd-access
   BANRULE("wallet",	2)	// Send zip-bomb to wallet lovers
- {"", 0, 0}			// End of table
 };
+
+#define RULES_QTY (sizeof(rules) / sizeof(struct rule))
 
 /*------------------------------------------------------------------------------*/
 
@@ -159,19 +160,28 @@ int main(int argc, char **argv) {
     static char htable[HMASK + 1]; // Hashtable for Rabin search algorithm
     int act_no = 0; // Default: print err404
 
-    const struct rule *r = rules;
-    while(r->len != 0)
-      htable[(((r->str[0] ^ rnd) << 6) + ((r->str[1] ^ rnd) << 3) + (r->str[2] ^ rnd)) & HMASK] = 1, r++;
+    // Fill hashtable from rules
+    for(int r = 0; r < RULES_QTY; r++) {
+      const char *s = rules[r].str;
+      htable[(((s[0] ^ rnd) << 6) + ((s[1] ^ rnd) << 3) + (s[2] ^ rnd)) & HMASK] |= 1 << (~r & 7);
+    }
 
     // Search for substrings using Rabin algoruthm with 3-chars sliding window
     int hash = 0;
+    char h2;
     for(const char *p = g_uri; *p; p++)
-      if(htable[hash = ((hash << 3) + (*p ^ rnd)) & HMASK] && p - g_uri >= 2)
-	for(r = rules; r->len != 0; r++) 
-          if(strncmp(p - 2, r->str, r->len) == 0) {
-	    act_no = r->op_num;
-	    goto action;
-	  }
+      if((h2 = htable[hash = ((hash << 3) + (*p ^ rnd)) & HMASK]) && p - g_uri >= 2) {
+	int start = 0;
+	do {
+	  if(h2 < 0)
+            for(int r = start; r < RULES_QTY; r += 8) 
+              if(strncmp(p - 2, rules[r].str, rules[r].len) == 0) {
+	        act_no = rules[r].op_num;
+	        goto action;
+	      }
+	  start++;
+	} while(h2 <<= 1);
+      } // for+if
 
     action:
 
