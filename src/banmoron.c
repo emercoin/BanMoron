@@ -86,7 +86,7 @@ void ban_moron(char **parmList) {
     } // for
     execv(parmList[0], parmList);
   } // else -- LAN
-} // block_moron_pf
+} // block_moron
 
 /*------------------------------------------------------------------------------*/
 // FreeBSD PF specified banner. Put moron's IP to pf-table "morons"
@@ -125,7 +125,7 @@ void zip_bomb(void) {
   // Send infinity zip, until iclient close connection
   while(fwrite(bomb_body, 1024, 1, stdout) != 1);
 
-} // block_moron_pf
+} // zip_bomb
 
 /*------------------------------------------------------------------------------*/
 // Send zip-bomb and ban thereafter
@@ -166,7 +166,7 @@ int main(int argc, char **argv) {
       htable[(((s[0] ^ rnd) << 6) + ((s[1] ^ rnd) << 3) + (s[2] ^ rnd)) & HMASK] |= 1 << (~r & 7);
     }
 
-    // Search for substrings using Rabin algoruthm with 3-chars sliding window
+    // Search for substrings using Rabin algorithm with 3-chars sliding window
     int hash = 0;
     char h2;
     for(const char *p = g_uri; *p; p++)
