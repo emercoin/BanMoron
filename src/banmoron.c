@@ -86,7 +86,7 @@ void ban_moron(char **parmList) {
     } // for
     execv(parmList[0], parmList);
   } // else -- LAN
-} // block_moron
+} // ban_moron
 
 /*------------------------------------------------------------------------------*/
 // FreeBSD PF specified banner. Put moron's IP to pf-table "morons"
@@ -95,7 +95,7 @@ void ban_moron_pf(void) {
   char *parmList[] = {"/sbin/pfctl", "-qt", "morons", "-T", "add", NULL, NULL};
   parmList[5] = g_ip;
   ban_moron(parmList);
-} // block_moron_pf
+} // ban_moron_pf
 
 /*------------------------------------------------------------------------------*/
 // Send infinity zip-bomb to hacker
