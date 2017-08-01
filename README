@@ -1,26 +1,26 @@
 BanMoron
 
-This is security tool, protects WEB-stie versus attempts of exploit or collect more 
-information about WEB-site structure.
+This is a security tool, it protects WEB-sites from attempts to exploit or collect more 
+information about the WEB-site structure.
 
 Algorithm:
 
-This is binary programs, runs as "Page Not Found" (Err404) CGI handler.
-Web-server calls this program, if requested page is not found.
-Program analyzes requested URI (env variable REQUEST_URI), and try
-to find here some pattern (substring) for activate this or that ban rule.
+This is a binary program, it runs as "Page Not Found" (Err404) CGI handler.
+A Web-server will call this program, if the requested page is not found.
+The program analyzes the requested URI (env variable REQUEST_URI), and tries
+to find some pattern (substring) to  activate a ban rule.
 
-If no any rule matched, program just prints out regular Page 404 "not Found".
-If some substring is mathched, program perform action, assigned to this rule.
+If no rule is matched, the program just prints out the regular Page 404 "not Found".
+If some substring is mathched, the program will perform an action, assigned to a rule.
 Currently actions are:
   0 just print the page "404 not found" (default)
   1 ban by IP (FreeBSD pf)
   2 send back zip-bomb
   3 send back zip-bomb and ban by IP
 
-Program has modular structure, and this is eady to add other action handlers, or modify rule set.
-Currently, program designed very lightweight: Binary code is 6KB only, 
-and dependance from libc only. Thus, this is almost no overhead to run this program.
+Program has modular structure, and this is easy to add other action handlers to it, or modify the rule set.
+Currently, the program is designed to be very lightweight: Binary code is 6KB only, 
+and dependance from libc only. Thus, there is almost no overhead to run this program.
 
 ATTN: binary program is installed with S-bit, to run it as owner (root).
 This is needed to run pfctl (or another filter control utilite) to sucessfully
@@ -29,15 +29,15 @@ add IP to firewall ban list.
 How to use:
 
 1. Open and modify Makefile. Setup correct path CGIPATH to install resulting CGI-program.
-   In addition, maybe you needed modify OWNER/GROUP for install.
-2. Edit banmoron.c, and modify rulet accorfing your site needs (lines 37-45).
+   In addition, maybe you need to modify OWNER/GROUP for install.
+2. Edit banmoron.c, and modify rules according to your site's needs (lines 37-45).
 3. Modify your web-server config, to run this program on event 404. 
    For Apache, specify in the httpd.conf:
 	ErrorDocument 404 "/cgi-bin/banmoron.cgi"
-4. Build program (make) and install it (make install).
-5. Add to your firewall table <morons> and apropriate rules to ban IPs from this table.
+4. Build the program (make) and install it (make install).
+5. Add into your firewall table <morons> and apropriate rules to ban IPs from this table.
    See example in pf.conf
 6. Add into crontab rule to remove banned IPs after some timeout.
-   Example pf.crontab contains command to unblock IPs with 3days of inactivity.
+   Example pf.crontab contains a command to unblock IPs after 3days of inactivity.
 7. Restart WEB-server.
 
