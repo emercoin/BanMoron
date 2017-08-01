@@ -36,10 +36,12 @@ struct rule {
 // Substring length: min=3, max=13
 struct rule rules[] = {
   //-------xxxXXXXXXXXXX---
-  BANRULE("setup.php",	1)	// Ban PHP My Admin scanner
-  BANRULE("xmlrpc.php",	1)	// Ban WordPress XMLRPC bruteforecer
-  BANRULE("command.php",1)	// Ban - I don't know what, but found in httpd-access
-  BANRULE("wallet",	2)	// Send zip-bomb to wallet lovers
+  BANRULE("setup.php",	  1)	// Ban PHP My Admin scanner
+  BANRULE("xmlrpc.php",	  1)	// Ban WordPress XMLRPC bruteforecer
+  BANRULE("command.php",  1)	// Ban - I don't know what, but found in httpd-access
+  BANRULE("wallet",	  2)	// Send zip-bomb to wallet lovers
+  BANRULE("Detect.js.php",1)	// Ban - some new exploit, don't know details
+  //-------xxxXXXXXXXXXX---
 };
 
 #define RULES_QTY (sizeof(rules) / sizeof(struct rule))

@@ -10,28 +10,33 @@ Web-server calls this program, if requested page is not found.
 Program analyzes requested URI (env variable REQUEST_URI), and try
 to find here some pattern (substring) for activate this or that ban rule.
 
-If no any rule matched, program just prints our regular Page 404 "not Found".
-If some substring mathched, program perform action, assigned to this rule.
+If no any rule matched, program just prints out regular Page 404 "not Found".
+If some substring is mathched, program perform action, assigned to this rule.
 Currently actions are:
-  - just print the page "404 not found" (default)
-  - ban by IP (FreeBSD pf)
-  - send back zip-bomb
-  - send back zip-bomb and ban by IP
+  0 just print the page "404 not found" (default)
+  1 ban by IP (FreeBSD pf)
+  2 send back zip-bomb
+  3 send back zip-bomb and ban by IP
 
 Program has modular structure, and this is eady to add other action handlers, or modify rule set.
 Currently, program designed very lightweight: Binary code is 6KB only, 
 and dependance from libc only. Thus, this is almost no overhead to run this program.
 
-ATTN: binary program is installed with S-bit, to run it as root.
+ATTN: binary program is installed with S-bit, to run it as owner (root).
 This is needed to run pfctl (or another filter control utilite) to sucessfully
 add IP to firewall ban list.
 
 How to use:
 
 1. Open and modify Makefile. Setup correct path CGIPATH to install resulting CGI-program.
-2. Edit banmoron.c, and modify rulet accorfing your site needs (lines 37-44).
+2. Edit banmoron.c, and modify rulet accorfing your site needs (lines 37-45).
 3. Modify your web-server config, to run this program on event 404. 
    For Apache, specify in the httpd.conf:
 	ErrorDocument 404 "/cgi-bin/banmoron.cgi"
 4. Build program (make) and install it (make install).
-5. Restart WEB-server.
+5. Add to your firewall table <morons> and apropriate rules to ban IPs from this table.
+   See example in pf.conf
+6. Add into crontab rule to remove banned IPs after some timeout.
+   Example pf.crontab contains command to unblock IPs with 3days of inactivity.
+7. Restart WEB-server.
+
