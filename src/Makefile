@@ -6,6 +6,8 @@ CFLAGS	=	-Wall -Os -pipe
 OBJ	=	banmoron.o
 
 PROJECT	= 	banmoron.cgi
+OWNER	=	root
+GROUP	=	www
 
 # Default install root
 CGIPATH	?=	/usr/local/www/apache24/cgi-bin/
@@ -22,4 +24,4 @@ clean:
 	rm -f $(OBJ) $(PROJECT)
 
 install:
-	install -s -m 4755 $(PROJECT) $(CGIPATH)
+	install -s -m 4750 -o $(OWNER) -g $(GROUP) $(PROJECT) $(CGIPATH)

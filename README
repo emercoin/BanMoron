@@ -29,6 +29,7 @@ add IP to firewall ban list.
 How to use:
 
 1. Open and modify Makefile. Setup correct path CGIPATH to install resulting CGI-program.
+   In addition, maybe you needed modify OWNER/GROUP for install.
 2. Edit banmoron.c, and modify rulet accorfing your site needs (lines 37-45).
 3. Modify your web-server config, to run this program on event 404. 
    For Apache, specify in the httpd.conf:
