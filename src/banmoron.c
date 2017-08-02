@@ -148,7 +148,7 @@ int main(int argc, char **argv) {
   g_ip  = getenv("REMOTE_ADDR");
 
   // get some random for universal hashing
-  char rnd = (char)getpid();
+  int rnd = getpid();
 
 #if DEBUG
   if(g_uri == NULL) {
