@@ -24,7 +24,7 @@ struct rule {
   unsigned char	op_num;		// Action number (weapon)
 };
 
-#define DEBUG	0
+#define DEBUG	1
 
 // Do not ban computerd from LAN, we debug with them
 #define LAN_PREFIX "192.168."
@@ -36,12 +36,14 @@ struct rule {
 // Substring length: min=3, max=13
 struct rule rules[] = {
   //-------xxxXXXXXXXXXX---
-  BANRULE("setup.php",	  1)	// Ban PHP My Admin scanner
-  BANRULE("xmlrpc.php",	  1)	// Ban WordPress XMLRPC bruteforecer
-  BANRULE("command.php",  1)	// Ban - I don't know what, but found in httpd-access
-  BANRULE("w00t",	  1)	// Ban Romanian PHP My Admin scanner
+//  BANRULE("setup.php",	  1)	// Ban PHP My Admin scanner
+//  BANRULE("xmlrpc.php",	  1)	// Ban WordPress XMLRPC bruteforecer
+//  BANRULE("command.php",  1)	// Ban - I don't know what, but found in httpd-access
+//  BANRULE("Detect.js.php",1)	// Ban - some new exploit, don't know details
+  BANRULE(".php",	  1)	// Ban - attempt to palp sever by multiple vulnerabilities
+  BANRULE("http://",	  1)	// Ban - proxy scanner
   BANRULE("wallet",	  2)	// Send zip-bomb to wallet lovers
-  BANRULE("Detect.js.php",1)	// Ban - some new exploit, don't know details
+  BANRULE("w00t",	  3)	// Ban Romanian PHP My Admin exploit
   BANRULE("Unblock.cgi"	 ,3)	// Zip+Ban - Attempt hack into router
   //-------xxxXXXXXXXXXX---
 };
