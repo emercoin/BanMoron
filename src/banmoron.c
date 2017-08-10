@@ -24,7 +24,7 @@ struct rule {
   unsigned char	op_num;		// Action number (weapon)
 };
 
-#define DEBUG	1
+#define USE_TEST	1
 
 // Do not ban computerd from LAN, we debug with them
 #define LAN_PREFIX "192.168."
@@ -88,7 +88,7 @@ void ban_moron(char **parmList) {
 	    (c >= 'a' && c <= 'f') ||
 	    (c >= 'A' && c <= 'F')
 	 ))
-        return; // Hacked REMOTE_ADDR, unable to block
+        exit(~0); // Hacked REMOTE_ADDR, unable to block. Report an error
     } // for
     execv(parmList[0], parmList);
   } // else -- LAN
@@ -154,7 +154,7 @@ int main(int argc, char **argv) {
   // get some random for universal hashing
   int rnd = getpid();
 
-#if DEBUG
+#if USE_TEST
   if(g_uri == NULL) {
     // started from command line - check rules action, no real action calls
     g_uri = argv[1];
@@ -163,7 +163,7 @@ int main(int argc, char **argv) {
 #endif
 
   if(g_ip && g_uri) {
-    static char htable[HMASK + 1]; // Hashtable for Rabin search algorithm
+    static char htable[HMASK + 1]; // Hashtable for Rabin-Karp search algorithm
     int act_no = 0; // Default: print err404
 
     // Fill hashtable from rules
@@ -172,9 +172,9 @@ int main(int argc, char **argv) {
       htable[(((s[0] ^ rnd) << 6) + ((s[1] ^ rnd) << 3) + (s[2] ^ rnd)) & HMASK] |= 1 << (~r & 7);
     }
 
-    // Search for substrings using Rabin algorithm with 3-chars sliding window
+    // Search for substrings using Rabin-Karp algorithm with 3-chars sliding window
     int hash = 0;
-    char h2;
+    signed char h2;
     for(const char *p = g_uri; *p; p++)
       if((h2 = htable[hash = ((hash << 3) + (*p ^ rnd)) & HMASK]) && p - g_uri >= 2) {
 	int start = 0;
@@ -191,7 +191,7 @@ int main(int argc, char **argv) {
 
     action:
 
-#if DEBUG
+#if USE_TEST
     if(g_ip == (char*)0x1) {
       printf("Debug action=%d\n", act_no);
       return act_no;
