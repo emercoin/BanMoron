@@ -42,9 +42,9 @@ struct rule rules[] = {
 //  BANRULE("Detect.js.php",1)	// Ban - some new exploit, don't know details
   BANRULE(".php",	  1)	// Ban - attempt to palp sever by multiple vulnerabilities
   BANRULE("http://",	  1)	// Ban - proxy scanner
-  BANRULE("wallet",	  2)	// Send zip-bomb to wallet lovers
-  BANRULE("w00t",	  3)	// Ban Romanian PHP My Admin exploit
-  BANRULE("Unblock.cgi"	 ,3)	// Zip+Ban - Attempt hack into router
+  BANRULE("wallet",	  1)	// Send zip-bomb to wallet lovers
+  BANRULE("w00t",	  1)	// Ban Romanian PHP My Admin exploit
+  BANRULE("Unblock.cgi"	 ,1)	// Zip+Ban - Attempt hack into router
   //-------xxxXXXXXXXXXX---
 };
 
