@@ -77,13 +77,12 @@ void ban_moron_pf(void) {
 # if defined LOG_FNAME
     int log_fd = open(LOG_FNAME, O_WRONLY | O_APPEND | O_CREAT, 0644);
     if(log_fd >= 0) {
-        char *buf = (char*)alloca(1024 + (uint8_t)rand());
+        char *buf = (char*)alloca(1024 + 128 + (uint8_t)rand());
         time_t now = time(NULL);
         struct tm *local = localtime(&now);
-        char time_buf[128];
-        strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S %Z", local);
-        int wlen = snprintf(buf, 1020, "%s: Block ip=[%s] in host=[%s] by rule=[%s] op=%u\n", time_buf, g_ip, getenv("HTTP_HOST"), g_cur_rule->str, g_cur_rule->op_num);
-        write(log_fd, buf, wlen < 1020? wlen : 1020);
+        strftime(buf, 128, "%Y-%m-%d %H:%M:%S %Z", local);
+        snprintf(strchr(buf, 0), 1020, ": Block ip=[%s] in host=[%s] by rule=[%s] op=%u\n", g_ip, getenv("HTTP_HOST"), g_cur_rule->str, g_cur_rule->op_num);
+        write(log_fd, buf, strlen(buf));
         close(log_fd);
     }
 #endif

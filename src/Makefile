@@ -10,7 +10,8 @@ OWNER	=	root
 GROUP	=	www
 
 # Default install root
-CGIPATH	?=	/usr/local/www/apache24/cgi-bin/
+#CGIPATH	?=	/usr/local/www/apache24/cgi-bin/
+CGIPATH	?=	/data/www/cgi-bin-common/
 
 all: $(PROJECT)
 
