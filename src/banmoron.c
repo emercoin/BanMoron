@@ -69,14 +69,17 @@ void ban_moron_pf(void) {
         printf("%sLAN IP is not blocked: %s\n</body></html>\n", htmlHead, g_ip);
         return;
     }
-    printf("%sBlocked IP: %s\n</body></html>\n", htmlHead, g_ip);
     fclose(stdout);
-
     char *parmList[] = {"/sbin/pfctl", "-qt", "morons", "-T", "add", NULL, NULL};
     parmList[5] = (char *)g_ip;
     execv(parmList[0], parmList);
-
 } // ban_moron_pf
+
+/*------------------------------------------------------------------------------*/
+void ban_print(void) {
+    printf("%sYour IP: %s is blocked\n</body></html>\n", htmlHead, g_ip);
+    ban_moron_pf();
+} // ban_print
 
 /*------------------------------------------------------------------------------*/
 // Send infinity zip-bomb to hacker
@@ -114,6 +117,17 @@ void random_redirect(void) {
     const static char protos[4][6] = {
         "https", "https", "http", "ftp"
     };
+    const char net_A[16] = { 
+        24, 50,     // Comcast/8
+        12, 32, 99, // AT&T/8
+        58, 120,    // Deutsche Telekom/8
+        42,         // Vodafone/8
+        24, 50,     // Comcast/8
+        52, 54,     // Amazon AWS/8
+        35,         // Google Cloud/8
+        40, 13,     // MS Azure/8
+        68          // Cox/9
+    };
     uint32_t rnd_ip   = rand();
     uint32_t rns_port = rand();
     if((rnd_ip ^ rns_port) <= 0x00ffffff)
@@ -123,21 +137,21 @@ void random_redirect(void) {
     else
         printf("Status: 301 Moved Permanently\n"
            "Location: %s://%u.%u.%u.%u:%u/%x\n\n", 
-           protos[rns_port & 3],
-           (uint8_t)rnd_ip,
+           protos[(uint8_t)rnd_ip >> 6],
+           net_A[rnd_ip & 0xf],
            (uint8_t)(rnd_ip >> 8),
            (uint8_t)(rnd_ip >> 16),
            (uint8_t)(rnd_ip >> 24),
            (rns_port >> 16),
-           (rns_port >> 2) & 0x3fff
+           (uint16_t)(rns_port)
            );
   ban_moron_pf();
 }
 
 /*------------------------------------------------------------------------------*/
 // Arsenal of weapons
-//                                   0             1         2                3
-const action_t arsenal[] = { print_404, ban_moron_pf, zip_bomb, random_redirect };
+//                                   0          1        2                 3
+const action_t arsenal[] = { print_404, ban_print, zip_bomb, random_redirect };
 
 // Substring length: min=3, max=13
 struct rule rules[] = {
