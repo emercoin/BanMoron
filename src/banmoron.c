@@ -6,6 +6,7 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <signal.h>
+#include <fcntl.h>
 
 /*------------------------------------------------------------------------------*/
 // 404 CGI program for perform strike-back action.
@@ -27,12 +28,14 @@ struct rule {
   unsigned char	len;		// Actual substring lenght
   unsigned char	op_num;		// Action number (weapon)
 };
+struct rule g_none_rule = { "<NONE>", sizeof("<NONE>") - 1, -1 };
+struct rule *g_cur_rule = &g_none_rule;
 
 #define USE_TEST	0
 
 // Do not ban computerd from LAN, we debug with them
 #define LAN_PREFIX "192.168."
-
+#define LOG_FNAME  "/var/log/httpd/banmoron.log"
 // Hashtable mask
 #define HMASK ((1 << 9) - 1)
 
@@ -71,6 +74,19 @@ void ban_moron_pf(void) {
         return;
     }
     fclose(stdout);
+# if defined LOG_FNAME
+    int log_fd = open(LOG_FNAME, O_WRONLY | O_APPEND | O_CREAT, 0644);
+    if(log_fd >= 0) {
+        char *buf = (char*)alloca(1024 + (uint8_t)rand());
+        time_t now = time(NULL);
+        struct tm *local = localtime(&now);
+        char time_buf[128];
+        strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S %Z", local);
+        int wlen = snprintf(buf, 1020, "%s: Block ip=[%s] in host=[%s] by rule=[%s] op=%u\n", time_buf, g_ip, getenv("HTTP_HOST"), g_cur_rule->str, g_cur_rule->op_num);
+        write(log_fd, buf, wlen < 1020? wlen : 1020);
+        close(log_fd);
+    }
+#endif
     char *parmList[] = {"/sbin/pfctl", "-qt", "morons", "-T", "add", NULL, NULL};
     parmList[5] = (char *)g_ip;
     execv(parmList[0], parmList);
@@ -192,8 +208,8 @@ int main(int argc, char **argv) {
     }
 
     srand(time(NULL) ^ getpid() + clock());
-    // get some random for universal hashing
-    int rnd = rand();
+    // Get some random for universal hashing & SHO
+    uint32_t rnd = rand();
 
     g_ip  = getenv("REMOTE_ADDR");
     if(g_ip == NULL || *g_ip == 0)
@@ -235,6 +251,7 @@ int main(int argc, char **argv) {
                     for(int r = start; r < RULES_QTY; r += 8) 
                         if(strncmp(p - 2, rules[r].str, rules[r].len) == 0) {
                             act_no = rules[r].op_num;
+                            g_cur_rule = &rules[r];
                             goto action;
                         }
                 start++;
