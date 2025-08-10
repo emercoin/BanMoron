@@ -5,6 +5,7 @@
 #include <time.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <signal.h>
 
 /*------------------------------------------------------------------------------*/
 // 404 CGI program for perform strike-back action.
@@ -106,6 +107,10 @@ void zip_bomb(void) {
 
   fwrite(bomb_header, sizeof(bomb_header), 1, stdout); 
 
+  // We need ignore signal to asuucessfully add client to morons table
+  signal(SIGPIPE, SIG_IGN);
+  signal(SIGTERM, SIG_IGN);
+
   // Send infinity zip, until client close connection
   while(fwrite(bomb_body, sizeof(bomb_body), 1, stdout) == 1);
 
@@ -161,11 +166,14 @@ struct rule rules[] = {
   BANRULE(".bak",         2)	// Zip+Ban - Backup lover - take backup!
   BANRULE("etc/passwd",   2)	// Zip+Ban - passwd files lover
   BANRULE("Unblock.cgi",  2)    // Zip+Ban - Attempt hack into router
+  BANRULE(".well-known",  2)    // Zip+Ban - Attempt download Letsencrypt
   BANRULE("w00t",	      3)	// Ban Romanian PHP My Admin exploit
   BANRULE("../..",        3)	// Redirect
   BANRULE(".php",	      3)	// 
   BANRULE("wp-content",   3)	// 
   BANRULE("test-cgi",     3)	// 
+  BANRULE("admin",        3)	// 
+  BANRULE("ogin",         3)	// Login/login
   //-------xxxXXXXXXXXXX---
 };
 
