@@ -31,6 +31,12 @@ struct rule {
 struct rule g_none_rule = { "<NONE>", sizeof("<NONE>") - 1, -1 };
 struct rule *g_cur_rule = &g_none_rule;
 
+typedef enum {
+  Ban      = 1,
+  ZipBomb  = 2,
+  Redirect = 3
+} Do;
+
 #define USE_TEST	0
 
 // Do not ban computerd from LAN, we debug with them
@@ -176,19 +182,38 @@ const action_t arsenal[] = { print_404, ban_print, zip_bomb, random_redirect };
 // Substring length: min=3, max=13
 struct rule rules[] = {
   //-------xxxXXXXXXXXXX---
-  BANRULE("http://",      1)	// Ban - proxy scanner
-  BANRULE("wallet",	      2)	// Send zip-bomb to wallet lovers
-  BANRULE(".bak",         2)	// Zip+Ban - Backup lover - take backup!
-  BANRULE("etc/passwd",   2)	// Zip+Ban - passwd files lover
-  BANRULE("Unblock.cgi",  2)    // Zip+Ban - Attempt hack into router
-  BANRULE(".well-known",  2)    // Zip+Ban - Attempt download Letsencrypt
-  BANRULE("w00t",	      3)	// Ban Romanian PHP My Admin exploit
-  BANRULE("../..",        3)	// Redirect
-  BANRULE(".php",	      3)	// 
-  BANRULE("wp-content",   3)	// 
-  BANRULE("test-cgi",     3)	// 
-  BANRULE("admin",        3)	// 
-  BANRULE("ogin",         3)	// Login/login
+  BANRULE("http://",      Ban)	// Ban - proxy scanner
+  BANRULE("https://",     Ban)	// Ban - proxy scanner
+  BANRULE("ftp://",       Ban)	// Ban - proxy scanner
+  BANRULE("wallet",	      ZipBomb)	// Send zip-bomb to wallet lovers
+  BANRULE(".bak",         ZipBomb)	// Zip+Ban - Backup lover - take backup!
+  BANRULE("etc/passwd",   ZipBomb)	// Zip+Ban - passwd files lover
+  BANRULE("Unblock.cgi",  ZipBomb)  // Zip+Ban - Attempt hack into router
+  BANRULE(".well-known",  ZipBomb)  // Zip+Ban - Attempt download Letsencrypt
+  BANRULE("../..",        ZipBomb)	// Want file? Take it!
+  BANRULE("/bin/sh",      ZipBomb)	// Want shell? Get output!
+  BANRULE("|sh",          ZipBomb)	// Want shell? Get output!
+  BANRULE(";sh",          ZipBomb)	// Want shell? Get output!
+  BANRULE("&sh",          ZipBomb)	// Want shell? Get output!
+  BANRULE("curl",	      ZipBomb)	// 
+  BANRULE("tftp",	      ZipBomb)	// 
+  BANRULE("wget",	      ZipBomb)	// 
+  BANRULE(".php",	      ZipBomb)	// 
+  BANRULE("wp-content",   ZipBomb)	// 
+  BANRULE("admin",        ZipBomb)	// 
+  BANRULE("sdk",          ZipBomb)	// 
+  BANRULE("/evox/",       ZipBomb)	// 
+  BANRULE("ogin",         ZipBomb)	// Login/login
+  BANRULE("/manager/html",ZipBomb)  // Tomcat manager
+  BANRULE("/jmx-console", ZipBomb)  // JBoss
+  BANRULE("/solr/",       ZipBomb)  // Apache Solr
+  BANRULE("/hudson/",     ZipBomb)  // 
+  BANRULE("/jenkins/",    ZipBomb)  // Jenkins
+  BANRULE("busybox",      ZipBomb)  //
+  BANRULE("chmod",        ZipBomb)  //
+  BANRULE("device.rsp",   ZipBomb)  //
+  BANRULE("nmaplowerche", Redirect)	// *
+  BANRULE("test-cgi",     Redirect)	// *
   //-------xxxXXXXXXXXXX---
 };
 
