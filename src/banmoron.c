@@ -117,7 +117,7 @@ void zip_bomb(void) {
     0x9d,  0x3d,  0x63,  0x5d,  0x6f,  0x8d,  0x99,  0x99,  0x99,  0x99,  0x99,  0x99,  0x99,  0x99,  0x99,  0x99,
   };
 
-  char bomb_body[256];
+  char bomb_body[1024];
   memset(bomb_body, 0x99, sizeof(bomb_body));
 
   puts(
@@ -128,12 +128,14 @@ void zip_bomb(void) {
 
   fwrite(bomb_header, sizeof(bomb_header), 1, stdout); 
 
-  // We need ignore signal to asuucessfully add client to morons table
+  // We need ignore signal to sucessfully add client to morons table
   signal(SIGPIPE, SIG_IGN);
   signal(SIGTERM, SIG_IGN);
 
-  // Send infinity zip, until client close connection
-  while(fwrite(bomb_body, sizeof(bomb_body), 1, stdout) == 1);
+  // Send infinity zip (up to 100M), until client close connection
+  for(int count = 0; count < 100000; count++)
+      if(fwrite(bomb_body, sizeof(bomb_body), 1, stdout) != 1)
+          break;
 
   ban_moron_pf();
 } // zip_bomb
@@ -154,15 +156,19 @@ void random_redirect(void) {
         40, 13,     // MS Azure/8
         68          // Cox/9
     };
+    printf(
+        "Status: 301 Moved Permanently\n"
+        "Connection: close\n"
+        "Location: "
+    );
+
     uint32_t rnd_ip   = rand();
     uint32_t rns_port = rand();
     if((rnd_ip ^ rns_port) <= 0x00ffffff)
         // 1 ticket of 256 wins bonus - 100G file!
-        printf("Status: 301 Moved Permanently\n"
-           "Location: http://speedtest.tele2.net/100GB.zip\n\n"); 
+        printf("http://speedtest.tele2.net/100GB.zip\n\n"); 
     else
-        printf("Status: 301 Moved Permanently\n"
-           "Location: %s://%u.%u.%u.%u:%u/%x\n\n", 
+        printf("%s://%u.%u.%u.%u:%u/%x\n\n", 
            protos[(uint8_t)rnd_ip >> 6],
            net_A[rnd_ip & 0xf],
            (uint8_t)(rnd_ip >> 8),
@@ -170,7 +176,7 @@ void random_redirect(void) {
            (uint8_t)(rnd_ip >> 24),
            (rns_port >> 16),
            (uint16_t)(rns_port)
-           );
+        );
   ban_moron_pf();
 }
 
@@ -202,6 +208,9 @@ struct rule rules[] = {
   BANRULE("wp-content",   ZipBomb)	// 
   BANRULE("admin",        ZipBomb)	// 
   BANRULE("sdk",          ZipBomb)	// 
+  BANRULE("config.",      ZipBomb)	// 
+  BANRULE(".zip",         ZipBomb)	// 
+  BANRULE(".tgz",         ZipBomb)	// 
   BANRULE("/evox/",       ZipBomb)	// 
   BANRULE("ogin",         ZipBomb)	// Login/login
   BANRULE("/manager/html",ZipBomb)  // Tomcat manager
@@ -212,6 +221,8 @@ struct rule rules[] = {
   BANRULE("busybox",      ZipBomb)  //
   BANRULE("chmod",        ZipBomb)  //
   BANRULE("device.rsp",   ZipBomb)  //
+  BANRULE("/mgmt.cgi",    ZipBomb)  // MikroTik & other
+  BANRULE("-bin/luci",    ZipBomb)  // OpenWrt/LEDE LuCI 
   BANRULE("nmaplowerche", Redirect)	// *
   BANRULE("test-cgi",     Redirect)	// *
   //-------xxxXXXXXXXXXX---
