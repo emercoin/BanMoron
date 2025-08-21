@@ -209,9 +209,10 @@ struct rule rules[] = {
   BANRULE("wp-content",   ZipRedir)	// 
   BANRULE("admin",        ZipRedir)	// 
   BANRULE("sdk",          ZipRedir)	// 
-  BANRULE("config.",      ZipRedir)	// 
+  BANRULE("config",       ZipRedir)	// 
   BANRULE(".zip",         ZipRedir)	// 
   BANRULE(".tgz",         ZipRedir)	// 
+  BANRULE(".git",         ZipRedir)	// 
   BANRULE("/evox/",       ZipRedir)	// 
   BANRULE("ogin",         ZipRedir)	// Login/login
   BANRULE("/manager/html",ZipRedir)  // Tomcat manager
@@ -221,6 +222,7 @@ struct rule rules[] = {
   BANRULE("/jenkins/",    ZipRedir)  // Jenkins
   BANRULE("busybox",      ZipRedir)  //
   BANRULE("chmod",        ZipRedir)  //
+  BANRULE("/hello.world", ZipRedir)  //
   BANRULE("device.rsp",   ZipRedir)  //
   BANRULE("/mgmt.cgi",    ZipRedir)  // MikroTik & other
   BANRULE("-bin/luci",    ZipRedir)  // OpenWrt/LEDE LuCI 
@@ -301,7 +303,8 @@ action:
 #else
     if(act_no == ZipRedir) {
         const char *ae = getenv("HTTP_ACCEPT_ENCODING");
-        act_no = (ae != NULL && strcasestr(ae, "gzip"))? ZipBomb: Redirect;
+        act_no = (ae != NULL && strcasestr(ae, "gzip"))? 
+            ZipBomb : Redirect;
     }
     arsenal[act_no](); // Use weapon from the arsenal
 #endif
