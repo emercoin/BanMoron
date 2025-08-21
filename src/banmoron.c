@@ -34,7 +34,8 @@ struct rule *g_cur_rule = &g_none_rule;
 typedef enum {
   Ban      = 1,
   ZipBomb  = 2,
-  Redirect = 3
+  Redirect = 3,
+  ZipRedir = 5
 } Do;
 
 #define USE_TEST	0
@@ -191,38 +192,38 @@ struct rule rules[] = {
   BANRULE("http://",      Ban)	// Ban - proxy scanner
   BANRULE("https://",     Ban)	// Ban - proxy scanner
   BANRULE("ftp://",       Ban)	// Ban - proxy scanner
-  BANRULE("wallet",	      ZipBomb)	// Send zip-bomb to wallet lovers
-  BANRULE(".bak",         ZipBomb)	// Zip+Ban - Backup lover - take backup!
-  BANRULE("etc/passwd",   ZipBomb)	// Zip+Ban - passwd files lover
-  BANRULE("Unblock.cgi",  ZipBomb)  // Zip+Ban - Attempt hack into router
-  BANRULE(".well-known",  ZipBomb)  // Zip+Ban - Attempt download Letsencrypt
-  BANRULE("../..",        ZipBomb)	// Want file? Take it!
-  BANRULE("/bin/sh",      ZipBomb)	// Want shell? Get output!
-  BANRULE("|sh",          ZipBomb)	// Want shell? Get output!
-  BANRULE(";sh",          ZipBomb)	// Want shell? Get output!
-  BANRULE("&sh",          ZipBomb)	// Want shell? Get output!
-  BANRULE("curl",	      ZipBomb)	// 
-  BANRULE("tftp",	      ZipBomb)	// 
-  BANRULE("wget",	      ZipBomb)	// 
-  BANRULE(".php",	      ZipBomb)	// 
-  BANRULE("wp-content",   ZipBomb)	// 
-  BANRULE("admin",        ZipBomb)	// 
-  BANRULE("sdk",          ZipBomb)	// 
-  BANRULE("config.",      ZipBomb)	// 
-  BANRULE(".zip",         ZipBomb)	// 
-  BANRULE(".tgz",         ZipBomb)	// 
-  BANRULE("/evox/",       ZipBomb)	// 
-  BANRULE("ogin",         ZipBomb)	// Login/login
-  BANRULE("/manager/html",ZipBomb)  // Tomcat manager
-  BANRULE("/jmx-console", ZipBomb)  // JBoss
-  BANRULE("/solr/",       ZipBomb)  // Apache Solr
-  BANRULE("/hudson/",     ZipBomb)  // 
-  BANRULE("/jenkins/",    ZipBomb)  // Jenkins
-  BANRULE("busybox",      ZipBomb)  //
-  BANRULE("chmod",        ZipBomb)  //
-  BANRULE("device.rsp",   ZipBomb)  //
-  BANRULE("/mgmt.cgi",    ZipBomb)  // MikroTik & other
-  BANRULE("-bin/luci",    ZipBomb)  // OpenWrt/LEDE LuCI 
+  BANRULE("wallet",	      ZipRedir)	// Send zip-bomb to wallet lovers
+  BANRULE(".bak",         ZipRedir)	// Zip+Ban - Backup lover - take backup!
+  BANRULE("etc/passwd",   ZipRedir)	// Zip+Ban - passwd files lover
+  BANRULE("Unblock.cgi",  ZipRedir)  // Zip+Ban - Attempt hack into router
+  BANRULE(".well-known",  ZipRedir)  // Zip+Ban - Attempt download Letsencrypt
+  BANRULE("../..",        ZipRedir)	// Want file? Take it!
+  BANRULE("/bin/sh",      ZipRedir)	// Want shell? Get output!
+  BANRULE("|sh",          ZipRedir)	// Want shell? Get output!
+  BANRULE(";sh",          ZipRedir)	// Want shell? Get output!
+  BANRULE("&sh",          ZipRedir)	// Want shell? Get output!
+  BANRULE("curl",	      ZipRedir)	// 
+  BANRULE("tftp",	      ZipRedir)	// 
+  BANRULE("wget",	      ZipRedir)	// 
+  BANRULE(".php",	      ZipRedir)	// 
+  BANRULE("wp-content",   ZipRedir)	// 
+  BANRULE("admin",        ZipRedir)	// 
+  BANRULE("sdk",          ZipRedir)	// 
+  BANRULE("config.",      ZipRedir)	// 
+  BANRULE(".zip",         ZipRedir)	// 
+  BANRULE(".tgz",         ZipRedir)	// 
+  BANRULE("/evox/",       ZipRedir)	// 
+  BANRULE("ogin",         ZipRedir)	// Login/login
+  BANRULE("/manager/html",ZipRedir)  // Tomcat manager
+  BANRULE("/jmx-console", ZipRedir)  // JBoss
+  BANRULE("/solr/",       ZipRedir)  // Apache Solr
+  BANRULE("/hudson/",     ZipRedir)  // 
+  BANRULE("/jenkins/",    ZipRedir)  // Jenkins
+  BANRULE("busybox",      ZipRedir)  //
+  BANRULE("chmod",        ZipRedir)  //
+  BANRULE("device.rsp",   ZipRedir)  //
+  BANRULE("/mgmt.cgi",    ZipRedir)  // MikroTik & other
+  BANRULE("-bin/luci",    ZipRedir)  // OpenWrt/LEDE LuCI 
   BANRULE("nmaplowerche", Redirect)	// *
   BANRULE("test-cgi",     Redirect)	// *
   //-------xxxXXXXXXXXXX---
@@ -298,6 +299,10 @@ action:
     printf("Debug action=%d\n", act_no);
     return act_no;
 #else
+    if(act_no == ZipRedir) {
+        const char *ae = getenv("HTTP_ACCEPT_ENCODING");
+        act_no = (ae != NULL && strcasestr(ae, "gzip"))? ZipBomb: Redirect;
+    }
     arsenal[act_no](); // Use weapon from the arsenal
 #endif
     return 0;
