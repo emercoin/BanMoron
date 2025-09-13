@@ -50,6 +50,7 @@ typedef enum {
 /*------------------------------------------------------------------------------*/
 
 const char *g_uri, *g_ip;
+int g_action_no = 0; // Default: print err404
 
 const char htmlHead[] = 
 	"Content-Type: text/html; charset=ISO-8859-1\n\n"
@@ -88,7 +89,7 @@ void ban_moron_pf(void) {
         time_t now = time(NULL);
         struct tm *local = localtime(&now);
         strftime(buf, 128, "%Y-%m-%d %H:%M:%S %Z", local);
-        snprintf(strchr(buf, 0), 1020, ": Block ip=[%s] in host=[%s] by rule=[%s] op=%u\n", g_ip, getenv("HTTP_HOST"), g_cur_rule->str, g_cur_rule->op_num);
+        snprintf(strchr(buf, 0), 1020, ": Block ip=[%s] in host=[%s] by rule=[%s] op=%u\n", g_ip, getenv("HTTP_HOST"), g_cur_rule->str, g_action_no);
         write(log_fd, buf, strlen(buf));
         close(log_fd);
     }
@@ -212,7 +213,8 @@ struct rule rules[] = {
   BANRULE("config",       ZipRedir)	// 
   BANRULE(".zip",         ZipRedir)	// 
   BANRULE(".tgz",         ZipRedir)	// 
-  BANRULE(".git",         ZipRedir)	// 
+  BANRULE("/.git",        ZipRedir)	// 
+  BANRULE("/.env",        ZipRedir)	// 
   BANRULE("/evox/",       ZipRedir)	// 
   BANRULE("ogin",         ZipRedir)	// Login/login
   BANRULE("/manager/html",ZipRedir)  // Tomcat manager
@@ -270,7 +272,6 @@ int main(int argc, char **argv) {
     }
 
     static char htable[HMASK + 1]; // Hashtable for Rabin-Karp search algorithm
-    int act_no = 0; // Default: print err404
 
     // Fill hashtable from rules
     for(int r = 0; r < RULES_QTY; r++) {
@@ -288,7 +289,7 @@ int main(int argc, char **argv) {
                 if(h2 < 0)
                     for(int r = start; r < RULES_QTY; r += 8) 
                         if(strncmp(p - 2, rules[r].str, rules[r].len) == 0) {
-                            act_no = rules[r].op_num;
+                            g_action_no = rules[r].op_num;
                             g_cur_rule = &rules[r];
                             goto action;
                         }
@@ -298,15 +299,15 @@ int main(int argc, char **argv) {
 
 action:
 #if USE_TEST
-    printf("Debug action=%d\n", act_no);
-    return act_no;
+    printf("Debug action=%d\n", g_action_no);
+    return g_action_no;
 #else
-    if(act_no == ZipRedir) {
+    if(g_action_no == ZipRedir) {
         const char *ae = getenv("HTTP_ACCEPT_ENCODING");
-        act_no = (ae != NULL && strcasestr(ae, "gzip"))? 
+        g_action_no = (ae != NULL && strcasestr(ae, "gzip"))? 
             ZipBomb : Redirect;
     }
-    arsenal[act_no](); // Use weapon from the arsenal
+    arsenal[g_action_no](); // Use weapon from the arsenal
 #endif
     return 0;
 } // main
