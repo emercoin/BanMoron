@@ -135,7 +135,7 @@ void zip_bomb(void) {
   signal(SIGTERM, SIG_IGN);
 
   // Send infinity zip (up to 100M), until client close connection
-  for(int count = 0; count < 100000; count++)
+  for(int count = 0; count < 1000000; count++)
       if(fwrite(bomb_body, sizeof(bomb_body), 1, stdout) != 1)
           break;
 
