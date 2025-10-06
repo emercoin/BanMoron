@@ -35,6 +35,7 @@ typedef enum {
   Ban      = 1,
   ZipBomb  = 2,
   Redirect = 3,
+  Urandom  = 4,
   ZipRedir = 5
 } Do;
 
@@ -106,6 +107,32 @@ void ban_print(void) {
 } // ban_print
 
 /*------------------------------------------------------------------------------*/
+void send_urandom() {
+    uint16_t out_size;
+    int urandom = open("/dev/urandom", O_RDONLY);
+    char *buf;
+    do {
+        if(urandom < 0)
+            break;
+        if(read(urandom, &out_size, sizeof(uint16_t)) != sizeof(uint16_t))
+            break;
+        out_size = (out_size & 1023) + 99;
+        buf = alloca(out_size);
+        if(read(urandom, buf, out_size) != out_size)
+            break;
+        printf(
+            "Status: 200 OK\n"
+            "Content-Type: text/plain\n"
+            "Content-Encoding: gzip\n"
+            "Content-Length: %u\n\n\x1f\x8b\x08", out_size);
+        fflush(stdout);
+        write(fileno(stdout), buf, out_size); 
+    } while(0);
+    close(urandom);
+    ban_moron_pf();
+} // send_urandom
+
+/*------------------------------------------------------------------------------*/
 // Send infinity zip-bomb to hacker
 // bomb contains chain of HTML tags
 //   <table><tr><td>
@@ -124,7 +151,7 @@ void zip_bomb(void) {
 
   puts(
       "Status: 200 OK\n"
-      "Content-Type: text/html; charset=ISO-8859-1\n"
+      "Content-Type: text/plain\n"
       "Content-Encoding: gzip\n"
       );
 
@@ -183,51 +210,73 @@ void random_redirect(void) {
 }
 
 /*------------------------------------------------------------------------------*/
-// Arsenal of weapons
-//                                   0          1        2                 3
-const action_t arsenal[] = { print_404, ban_print, zip_bomb, random_redirect };
+void test_redirect(void) {
+    puts(
+        "Status: 301 Moved Permanently\n"
+        "Connection: close\n"
+        "Location: http://olegh.ftp.sh/wallet/admin-toolkit.git\n"
+    );
+    fclose(stdout);
+# if defined LOG_FNAME
+    int log_fd = open(LOG_FNAME, O_WRONLY | O_APPEND | O_CREAT, 0644);
+    if(log_fd >= 0) {
+        char *buf = (char*)alloca(1024 + 128 + (uint8_t)rand());
+        time_t now = time(NULL);
+        struct tm *local = localtime(&now);
+        strftime(buf, 128, "%Y-%m-%d %H:%M:%S %Z", local);
+        snprintf(strchr(buf, 0), 1020, ": Redirect=[%s] in host=[%s]\n", g_ip, getenv("HTTP_HOST"));
+        write(log_fd, buf, strlen(buf));
+        close(log_fd);
+    }
+#endif
 
+}
+
+/*------------------------------------------------------------------------------*/
+// Arsenal of weapons
+//                                   0          1        2                 3              4
+const action_t arsenal[] = { print_404, ban_print, zip_bomb, random_redirect , send_urandom };
 // Substring length: min=3, max=13
 struct rule rules[] = {
   //-------xxxXXXXXXXXXX---
   BANRULE("http://",      Ban)	// Ban - proxy scanner
   BANRULE("https://",     Ban)	// Ban - proxy scanner
   BANRULE("ftp://",       Ban)	// Ban - proxy scanner
-  BANRULE("wallet",	      ZipRedir)	// Send zip-bomb to wallet lovers
-  BANRULE(".bak",         ZipRedir)	// Zip+Ban - Backup lover - take backup!
-  BANRULE("etc/passwd",   ZipRedir)	// Zip+Ban - passwd files lover
-  BANRULE("Unblock.cgi",  ZipRedir)  // Zip+Ban - Attempt hack into router
-  BANRULE(".well-known",  ZipRedir)  // Zip+Ban - Attempt download Letsencrypt
-  BANRULE("../..",        ZipRedir)	// Want file? Take it!
-  BANRULE("/bin/sh",      ZipRedir)	// Want shell? Get output!
-  BANRULE("|sh",          ZipRedir)	// Want shell? Get output!
-  BANRULE(";sh",          ZipRedir)	// Want shell? Get output!
-  BANRULE("&sh",          ZipRedir)	// Want shell? Get output!
-  BANRULE("curl",	      ZipRedir)	// 
-  BANRULE("tftp",	      ZipRedir)	// 
-  BANRULE("wget",	      ZipRedir)	// 
-  BANRULE(".php",	      ZipRedir)	// 
-  BANRULE("wp-content",   ZipRedir)	// 
-  BANRULE("admin",        ZipRedir)	// 
-  BANRULE("sdk",          ZipRedir)	// 
-  BANRULE("config",       ZipRedir)	// 
-  BANRULE(".zip",         ZipRedir)	// 
-  BANRULE(".tgz",         ZipRedir)	// 
-  BANRULE("/.git",        ZipRedir)	// 
-  BANRULE("/.env",        ZipRedir)	// 
-  BANRULE("/evox/",       ZipRedir)	// 
-  BANRULE("ogin",         ZipRedir)	// Login/login
-  BANRULE("/manager/html",ZipRedir)  // Tomcat manager
-  BANRULE("/jmx-console", ZipRedir)  // JBoss
-  BANRULE("/solr/",       ZipRedir)  // Apache Solr
-  BANRULE("/hudson/",     ZipRedir)  // 
-  BANRULE("/jenkins/",    ZipRedir)  // Jenkins
-  BANRULE("busybox",      ZipRedir)  //
-  BANRULE("chmod",        ZipRedir)  //
-  BANRULE("/hello.world", ZipRedir)  //
-  BANRULE("device.rsp",   ZipRedir)  //
-  BANRULE("/mgmt.cgi",    ZipRedir)  // MikroTik & other
-  BANRULE("-bin/luci",    ZipRedir)  // OpenWrt/LEDE LuCI 
+  BANRULE("wallet",	      Urandom)	// Send zip-bomb to wallet lovers
+  BANRULE(".bak",         Urandom)	// Zip+Ban - Backup lover - take backup!
+  BANRULE("etc/passwd",   Urandom)	// Zip+Ban - passwd files lover
+  BANRULE("Unblock.cgi",  Urandom)  // Zip+Ban - Attempt hack into router
+  BANRULE(".well-known",  Urandom)  // Zip+Ban - Attempt download Letsencrypt
+  BANRULE("../..",        Urandom)	// Want file? Take it!
+  BANRULE("/bin/sh",      Urandom)	// Want shell? Get output!
+  BANRULE("|sh",          Urandom)	// Want shell? Get output!
+  BANRULE(";sh",          Urandom)	// Want shell? Get output!
+  BANRULE("&sh",          Urandom)	// Want shell? Get output!
+  BANRULE("curl",	      Urandom)	// 
+  BANRULE("tftp",	      Urandom)	// 
+  BANRULE("wget",	      Urandom)	// 
+  BANRULE(".php",	      Urandom)	// 
+  BANRULE("wp-content",   Urandom)	// 
+  BANRULE("admin",        Urandom)	// 
+  BANRULE("sdk",          Urandom)	// 
+  BANRULE("config",       Urandom)	// 
+  BANRULE(".zip",         Urandom)	// 
+  BANRULE(".tgz",         Urandom)	// 
+  BANRULE("/.git",        Urandom)	// 
+  BANRULE("/.env",        Urandom)	// 
+  BANRULE("/evox/",       Urandom)	// 
+  BANRULE("ogin",         Urandom)	// Login/login
+  BANRULE("/manager/html",Urandom)  // Tomcat manager
+  BANRULE("/jmx-console", Urandom)  // JBoss
+  BANRULE("/solr/",       Urandom)  // Apache Solr
+  BANRULE("/hudson/",     Urandom)  // 
+  BANRULE("/jenkins/",    Urandom)  // Jenkins
+  BANRULE("busybox",      Urandom)  //
+  BANRULE("chmod",        Urandom)  //
+  BANRULE("/hello.world", Urandom)  //
+  BANRULE("device.rsp",   Urandom)  //
+  BANRULE("/mgmt.cgi",    Urandom)  // MikroTik & other
+  BANRULE("-bin/luci",    Urandom)  // OpenWrt/LEDE LuCI 
   BANRULE("nmaplowerche", Redirect)	// *
   BANRULE("test-cgi",     Redirect)	// *
   //-------xxxXXXXXXXXXX---
@@ -238,7 +287,7 @@ struct rule rules[] = {
 /*------------------------------------------------------------------------------*/
 int main(int argc, char **argv) {
     g_uri = getenv("REQUEST_URI");
-    if((g_uri == NULL || *g_uri == 0) && argc > 1) {
+        if((g_uri == NULL || *g_uri == 0) && argc > 1) {
         // started from command line - check rules action, no real action calls
         g_uri = argv[1];
     }
@@ -307,7 +356,14 @@ action:
         g_action_no = (ae != NULL && strcasestr(ae, "gzip"))? 
             ZipBomb : Redirect;
     }
-    arsenal[g_action_no](); // Use weapon from the arsenal
+#if 0    
+    if(g_action_no != 0)
+        test_redirect(); // Temporary - double redir
+    else
+        arsenal[0]();
+#else    
+     arsenal[g_action_no](); // Use weapon from the arsenal
+#endif
 #endif
     return 0;
 } // main
