@@ -7,6 +7,7 @@
 #include <sys/socket.h>
 #include <signal.h>
 #include <fcntl.h>
+#include <sys/wait.h>
 
 /*------------------------------------------------------------------------------*/
 // 404 CGI program for perform strike-back action.
@@ -83,6 +84,7 @@ void ban_moron_pf(void) {
         return;
     }
     fclose(stdout);
+    fclose(stdin);
 # if defined LOG_FNAME
     int log_fd = open(LOG_FNAME, O_WRONLY | O_APPEND | O_CREAT, 0644);
     if(log_fd >= 0) {
@@ -95,9 +97,34 @@ void ban_moron_pf(void) {
         close(log_fd);
     }
 #endif
+
+#if 0
+//    _exit(0);
+//     usleep(1000000); // Wait 1s for allow data send to a client
+    exit(0);
+    pid_t pid = fork();
+    if (pid < 0)
+        return;
+    if (pid == 0) {
+        // child: add IP to table
+        char *argv_add[] = { "/sbin/pfctl", "-q", "-t", "morons", "-T", "add", (char *)g_ip, NULL };
+        execv(argv_add[0], argv_add);
+        _exit(127);  /* exec failed: exit child */
+    }
+    /* parent: wait for child to finish adding */
+    if (waitpid(pid, NULL, 0) < 0)
+        return;
+ //   _exit(0);
+    exit(0);
+    // parent now replaces itself with pfctl -q -k <ip>
+    //char *argv_kill[] = { "/sbin/pfctl", "-q", "-k", (char *)g_ip, NULL };
+    //execv(argv_kill[0], argv_kill);
+    _exit(127);
+#else
     char *parmList[] = {"/sbin/pfctl", "-qt", "morons", "-T", "add", NULL, NULL};
     parmList[5] = (char *)g_ip;
     execv(parmList[0], parmList);
+#endif
 } // ban_moron_pf
 
 /*------------------------------------------------------------------------------*/
@@ -124,9 +151,9 @@ void send_urandom() {
             "Status: 200 OK\n"
             "Content-Type: text/plain\n"
             "Content-Encoding: gzip\n"
+            "Connection: close\n"
             "Content-Length: %u\n\n\x1f\x8b\x08", out_size);
-        fflush(stdout);
-        write(fileno(stdout), buf, out_size); 
+        fwrite(buf, out_size, 1, stdout);
     } while(0);
     close(urandom);
     ban_moron_pf();
